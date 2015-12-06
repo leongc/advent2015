@@ -23,11 +23,47 @@ function isNice(s) {
   return doubleLetter && vowels >= 3;
 }
 
+function isNice2(s) {
+  if (s.length < 3) { return false; }
+  var prevLetter;
+  var curLetter;
+  var nextLetter;
+  var seenPairs = {};
+  var hasSplitSingle = false;
+  var hasDuplicatePair = false;
+  for (k = 2; k < s.length; k++) {
+    prevLetter = s[k-2];
+    curLetter = s[k-1];
+    nextLetter = s[k];
+    if (!hasSplitSingle && prevLetter == nextLetter) {
+      hasSplitSingle = true;
+    }
+    if (!hasDuplicatePair) {
+      if (seenPairs[curLetter + nextLetter] === undefined) {
+        // insert trailing pair to prevent overlapped pair detection
+        seenPairs[prevLetter + curLetter] = 1;
+      } else {
+        hasDuplicatePair = true;
+        seenPairs = null;
+      }
+    }
+    if (hasSplitSingle && hasDuplicatePair) {
+      return true;
+    }
+  }
+  return false;
+}
+
 var input = document.body.innerText.split('\n');
 var niceCount = 0;
-for (i = 0; i < input.length; i++) {
+var nice2Count = 0;
+for (i = 0; i < 100; i++) {
   if (isNice(input[i])) {
     niceCount++;
   }
+  if (isNice2(input[i])) {
+    nice2Count++;
+  }
 }
 console.log(niceCount);
+console.log(nice2Count);
