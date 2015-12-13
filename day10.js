@@ -25,3 +25,8 @@ for (var j=0; j<40; j++) {
   a = lookAndSay(a);
 }
 console.log(a.length);
+var b = a;
+for (var j=0; j<10; j++) {
+  b = lookAndSay(b);
+}
+console.log(b.length);
