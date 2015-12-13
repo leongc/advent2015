@@ -9,6 +9,9 @@ function tryNumber(s) {
   return isNaN(n) ? s : n
 }
 function parseInput(lhs) {
+  if (!lhs) {
+    return null;
+  }
   var result = {};
   var words = lhs.split(' ');
   if (words[0] === 'NOT') {
@@ -44,8 +47,9 @@ function appendOutput(rh, operand) {
 function evalInput(lh, rh, append) {
   var notify = false;
   if (lh.operator === 'EQ') {
-    inputs[rh] = tryLookup(lh.operand);
+    lh.operand = tryLookup(lh.operand);
     if (typeof lh.operand === 'number') {
+      inputs[rh] = lh.operand;
       notify = true;
     } else if (append) {
       appendOutput(rh, lh.operand);
@@ -133,4 +137,4 @@ var i;
 for (i = 0; i < input.length; i++) {
   parseLine(input[i]);
 }
-console.log(values.a);
+console.log(inputs.a);
