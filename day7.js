@@ -138,3 +138,16 @@ for (i = 0; i < input.length; i++) {
   parseLine(input[i]);
 }
 console.log(inputs.a);
+
+// part b: substitute 956 -> b
+inputs = {};
+outputs = {};
+for (i = 0; i < input.length; i++) {
+  if (input[i] === '14146 -> b') {
+    parseLine('956 -> b');
+  } else {
+    parseLine(input[i]);
+  }
+}
+console.log(inputs.a);
+
