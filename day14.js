@@ -51,3 +51,76 @@ function raceAll(t) {
   return maxDistance;
 }
 console.log(raceAll(2503));
+
+// part b
+function reset() {
+  this.distance = 0;
+  this.clock = 0;
+  this.points = 0;
+}
+function tick() {
+  this.clock++;
+  if (this.clock % (this.endurance + this.recovery) < this.endurance) {
+    this.distance += this.speed;
+  }
+  return this.distance;
+}
+function score(distance) {
+  if (this.distance === distance) {
+    this.points++;
+  }
+  return this.points;
+}
+function enhanceReindeer(r) {
+  if (r.reset === undefined) {
+    r.reset = reset;
+  }
+  if (r.tick === undefined) {
+    r.tick = tick;
+  }
+  if (r.score === undefined) {
+    r.score = score;
+  }
+  return r;
+}
+function enhanceAll() {
+  var names = Object.keys(reindeer);
+  for (var k=0; k<names.length; k++) {
+    reindeer[names[k]] = enhanceReindeer(reindeer[names[k]]);
+  }
+}
+function tickAll() {
+  var names = Object.keys(reindeer);
+  var maxDistance = 0;
+  for (var k=0; k<names.length; k++) {
+    maxDistance = Math.max(maxDistance, reindeer[names[k]].tick());
+  }
+  return maxDistance;
+}
+function scoreAll(d) {
+  var names = Object.keys(reindeer);
+  var maxPoints = 0;
+  for (var k=0; k<names.length; k++) {
+    maxPoints = Math.max(maxPoints, reindeer[names[k]].score(d));
+  }
+  return maxPoints;
+}
+function resetAll() {
+  var names = Object.keys(reindeer);
+  for (var k=0; k<names.length; k++) {
+    reindeer[names[k]].reset();
+  }
+}
+function raceAllLead(t) {
+  enhanceAll();
+  resetAll();
+  var maxDistance = 0;
+  var maxScore = 0;
+  var names = Object.keys(reindeer);
+  for (var u=0; u<t; u++) {
+    maxDistance = tickAll();
+    maxScore = scoreAll(maxDistance);
+  }
+  return maxScore;
+}
+console.log(raceAllLead(2503));
