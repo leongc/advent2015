@@ -1,7 +1,7 @@
 // problem: http://adventofcode.com/day/14
 // input: http://adventofcode.com/day/14/input
 
-var reindeer = {}
+var reindeer = {};
 function parseLine(s) {
   if (!s) {
     return null;
@@ -59,10 +59,10 @@ function reset() {
   this.points = 0;
 }
 function tick() {
-  this.clock++;
   if (this.clock % (this.endurance + this.recovery) < this.endurance) {
     this.distance += this.speed;
   }
+  this.clock++;
   return this.distance;
 }
 function score(distance) {
