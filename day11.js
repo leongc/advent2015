@@ -70,4 +70,7 @@ function nextPassword(s) {
   }
   return candidate;
 }
-console.log(nextPassword('vzbxkghb'));
+var next = nextPassword('vzbxkghb');
+console.log(next);
+next = nextPassword(next);
+console.log(next);
