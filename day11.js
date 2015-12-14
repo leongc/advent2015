@@ -2,15 +2,15 @@
 // input: vzbxkghb
 
 function nextLetter(c) {
-  var d = Number.parseInt(c, 36) + 1;
-  if (d > 35) {
+  if (c === 'z') {
     return 'a';
   }
+  var d = c.charCodeAt(0) + 1;
   // skip i,l,o
-  if (d == 18 || d == 21 || d == 24) {
+  if (d == 105 || d == 108 || d == 111) {
     d++;
   }
-  return d.toString(36);
+  return String.fromCharCode(d);
 }
 function nextString(s) {
   var result = '';
