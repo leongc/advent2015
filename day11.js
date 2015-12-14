@@ -66,7 +66,7 @@ function hasTwoPairs(s) {
 function nextPassword(s) {
   var candidate = nextString(s);
   while (!(hasTwoPairs(candidate) && hasStraight(candidate))) {
-    candidate = nextString(s);
+    candidate = nextString(candidate);
   }
   return candidate;
 }
