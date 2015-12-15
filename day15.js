@@ -47,10 +47,13 @@ function scoreRecipe(ingredientQuantities, ingredients) {
   return recipeScore;
 }
 
-function createRecipeBuilder(total, ingredientList) {
+function createRecipeBuilder(total, ingredients, calories) {
   var recipeBuilder = {
     total: total,
-    ingredientList: ingredientList,
+    ingredients: ingredients,
+    ingredientList: Object.keys(ingredients),
+    calories: calories,
+    overflow: false,
     computeRemainder: function() {
       var remainder = this.total;
       for (var a=1; a<this.ingredientList.length; a++) {
@@ -60,7 +63,7 @@ function createRecipeBuilder(total, ingredientList) {
       return remainder;
     },
     build: function() {
-      if (this[ingredientList[0]] < 0) {
+      if (this.overflow) {
         return null;
       }
       var recipe = {};
@@ -84,19 +87,42 @@ function createRecipeBuilder(total, ingredientList) {
         }
         carry++;
       }
+      if (carry >= this.ingredientList.length) {
+        this.overflow = true;
+      }
+    },
+    sumCalories: function() {
+      if (this.overflow) {
+        return this.calories;
+      }
+      var sum = 0;
+      for (var a=0; a<this.ingredientList.length; a++) {
+        var ingredient = this.ingredientList[a];
+        sum += this[ingredient] * this.ingredients[ingredient].calories;
+      }
+      return sum;
+    },
+    nextCalories: function() {
+      do {
+        this.next();
+      } while (this.sumCalories() != this.calories);
+    },
+    reset: function() {
+      this.overflow = false;
+      for (var a=1; a<this.ingredientList.length; a++) {
+        var ingredient = this.ingredientList[a];
+        this[ingredient] = 0;
+      }
+      this.computeRemainder();
+      return this;
     }
   };
-  for (var a=1; a<ingredientList.length; a++) {
-    var ingredient = ingredientList[a];
-    recipeBuilder[ingredient] = 0;
-  }
-  recipeBuilder.computeRemainder();
-  return recipeBuilder;
+  return recipeBuilder.reset();
 }
 
 function findBestRecipe(total, ingredients) {
   var bestScore = 0;
-  var rb = createRecipeBuilder(total, Object.keys(ingredients));
+  var rb = createRecipeBuilder(total, ingredients);
   var recipe;
   while (recipe = rb.build()) {
     bestScore = Math.max(bestScore, scoreRecipe(recipe, ingredients));
@@ -104,5 +130,18 @@ function findBestRecipe(total, ingredients) {
   }
   return bestScore;
 }
+
+function findBestCalories(total, ingredients, calories) {
+  var bestScore = 0;
+  var rb = createRecipeBuilder(total, ingredients, calories);
+  var recipe;
+  rb.nextCalories();
+  while (recipe = rb.build()) {
+    bestScore = Math.max(bestScore, scoreRecipe(recipe, ingredients));
+    rb.nextCalories();
+  }
+  return bestScore;
+}
   
 console.log(findBestRecipe(100, ingredients));
+console.log(findBestCalories(100, ingredients, 500));
