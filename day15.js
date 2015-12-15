@@ -60,7 +60,7 @@ function createRecipeBuilder(total, ingredientList) {
       return remainder;
     },
     build: function() {
-      if (this.ingredientList[0] < 0) {
+      if (this[ingredientList[0]] < 0) {
         return null;
       }
       var recipe = {};
