@@ -25,6 +25,28 @@ var target = {
       }
     }
     return true;
+  },
+  retroencabulate: function(sue) {
+    if (!sue) { return false; }
+    var attrs = Object.keys(sue);
+    for (var j = 0; j < attrs.length; j++) {
+      var attr = attrs[j];
+      if (attr === "name") {
+        continue;
+      }
+      if (attr === "cats" || attr === "trees") {
+        if (sue[attr] <= this[attr]) {
+          return false;
+        }
+      } else if (attr === "pomeranians" || attr === "goldfish") {
+        if (sue[attr] >= this[attr]) {
+          return false;
+        }
+      } else if (sue[attr] !== this[attr]) {
+        return false;
+      }
+    }
+    return true;
   }
 };
 
@@ -40,12 +62,16 @@ function parseLine(s) {
   return sue;
 }
 
-var candidate;
-var inputs = document.body.innerText.split('\n');
-for (var i = 0; i < inputs.length; i++) {
-  candidate = parseLine(inputs[i]);
-  if (target.matches(candidate)) {
-    console.log(candidate);
-    break;
+function run(isPartB) {
+  var candidate;
+  var inputs = document.body.innerText.split('\n');
+  for (var i = 0; i < inputs.length; i++) {
+    candidate = parseLine(inputs[i]);
+    if (isPartB ? target.retroencabulate(candidate) : target.matches(candidate)) {
+      return candidate;
+    }
   }
 }
+
+console.log(run(false));
+console.log(run(true));
