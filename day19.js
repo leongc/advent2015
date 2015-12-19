@@ -17,7 +17,7 @@ testReplacements = readReplacementLine('H => HO', testReplacements);
 testReplacements = readReplacementLine('H => OH', testReplacements);
 testReplacements = readReplacementLine('O => HH', testReplacements);
 function transforms(source, replacements) {
-  var multiset = {}; // replacement => count
+  var multiset = {}; // replacement => 1
   for (var i = 0; i < source.length; i++) {
     var match = null;
     if (replacements[source[i]] !== undefined) {
@@ -33,12 +33,10 @@ function transforms(source, replacements) {
       var replaced = cloneSource.join("");
       if (multiset[replaced] === undefined) {
         multiset[replaced] = 1;
-      } else {
-        multiset[replaced]++;
       }
     }
   }
-  return multiset;
+  return Object.keys(multiset);
 }
 var inputs = document.body.innerText.split('\n');
 var inputReplacements = {};
@@ -48,6 +46,92 @@ for (var i = 0; i < inputs.length; i++) {
   if (line.indexOf(' => ') >= 0) {
     inputReplacements = readReplacementLine(line, inputReplacements);
   } else {
-    console.log(Object.keys(transforms(line, inputReplacements)).length);
+    console.log(transforms(line, inputReplacements).length);
   }
 }
+
+// part b
+var stepReplacements = {
+  'e': ['H', 'O'],
+  'H': ['HO', 'OH'],
+  'O': ['HH']
+};
+function steps(target, replacements, limit) {
+  var step = 0;
+  var input = ['e'];
+  if (limit === undefined) {
+    limit = 10;
+  }
+  while (++step < limit) {
+    var candidates = [];
+    for (var i = 0; i < input.length; i++) {
+      var output = transforms(input[i], replacements);
+      for (var j = 0; j < output.length; j++) {
+        if (output[j] === target) {
+          return step;
+        }
+      }
+      candidates = candidates.concat(output);
+    }
+    input = candidates;
+  }
+  return null;
+}
+// too slow: console.log(steps(inputs[inputs.length-2], inputReplacements, 10));
+
+var testReductions = [{'HH':'O'}, {'HO':'H'}, {'OH':'H'}, {'O':'e'}, {'H':'e'}];
+function reduce(input, reductions, count, limit) {
+  if (limit === undefined) {
+    limit = 10;
+  }
+  if (count >= limit) {
+    console.log("gave up on " + input + " after " + count);
+    return Infinity;
+  }
+  var minReduce = Infinity;
+  var replaced = input;
+  for (var i = 0; i < reductions.length; i++) {
+    var target = Object.keys(reductions[i])[0];
+    var index = input.indexOf(target);
+    if (index >= 0) {
+      var replacement = reductions[i][target];
+      replaced = input.split("");
+      replaced.splice(index, target.length, replacement);
+      replaced = replaced.join("");
+      if (replaced === 'e') {
+        return count + 1;
+      } else if ((count + 1) > minReduce) {
+        return minReduce;
+      }
+      minReduce = Math.min(minReduce, reduce(replaced, reductions, count + 1, limit));
+    }
+  }
+  return minReduce;
+}
+function readReductionLine(s) {
+  if (!s || s.indexOf(' => ') < 0) { return null; }
+  var inOut = s.split(' => ');
+  var original = inOut[0];
+  var replacement = inOut[1];
+  var reduction = {};
+  reduction[replacement] = original;
+  return reduction;
+}
+var inputReductions = [];
+for (var i = 0; i < inputs.length; i++) {
+  var reduction = readReductionLine(inputs[i]);
+  if (reduction) {
+    inputReductions.push(reduction);
+  }
+}
+inputReductions.sort(function(a, b) {
+  var ka = Object.keys(a)[0];
+  var kb = Object.keys(b)[0];
+  if (ka.length === kb.length) {
+    var va = a[ka];
+    var vb = b[kb];
+    return va.length > vb.length ? 1 : va.length < vb.length ? -1 : 0;
+  }
+  return ka.length > kb.length ? -1 : 1;
+});
+console.log(reduce(inputs[inputs.length-2], inputReductions, 0, 2));
