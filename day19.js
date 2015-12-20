@@ -62,6 +62,7 @@ function steps(target, replacements, limit) {
   if (limit === undefined) {
     limit = 10;
   }
+  var map = {};
   while (++step < limit) {
     var candidates = [];
     for (var i = 0; i < input.length; i++) {
@@ -69,23 +70,33 @@ function steps(target, replacements, limit) {
       for (var j = 0; j < output.length; j++) {
         if (output[j] === target) {
           return step;
-        }
+        } else if (output[j].length > target.length) {
+          continue; // transforms stay the same or grow longer, so this is a dead end
+        } else if (map[output[j]] === undefined) {
+          map[output[j]] = step;
+          candidates.push(output[j]);
+        } 
       }
-      candidates = candidates.concat(output);
     }
-    input = candidates;
+    input = candidates.slice(0);
   }
-  return null;
+  return map;
 }
-// too slow: console.log(steps(inputs[inputs.length-2], inputReplacements, 10));
+// console.log(steps('HOHOHO', inputReplacements, 10));
 
 var testReductions = [{'HH':'O'}, {'HO':'H'}, {'OH':'H'}, {'O':'e'}, {'H':'e'}];
-function reduce(input, reductions, count, limit) {
+function reduce(input, reductions, count, reduceMap, limit) {
+  if (count === undefined) {
+    count = 0;
+  }
   if (limit === undefined) {
     limit = 10;
   }
+  if (reduceMap === undefined) {
+    reduceMap = {};
+  }
   if (count >= limit) {
-    console.log("gave up on " + input + " after " + count);
+    // console.log("gave up on " + input + " after " + count);
     return Infinity;
   }
   var minReduce = Infinity;
@@ -97,13 +108,22 @@ function reduce(input, reductions, count, limit) {
       var replacement = reductions[i][target];
       replaced = input.split("");
       replaced.splice(index, target.length, replacement);
+      if (replaced === "") {
+        return minReduce; // dead-end
+      }
       replaced = replaced.join("");
       if (replaced === 'e') {
         return count + 1;
-      } else if ((count + 1) > minReduce) {
-        return minReduce;
+      } 
+      if ((count + 1) > minReduce) {
+        return minReduce; // longer than known solution
       }
-      minReduce = Math.min(minReduce, reduce(replaced, reductions, count + 1, limit));
+      var replacementCost = reduceMap[replaced];
+      if (replacementCost !== undefined) {
+        return minReduce; // already checked
+      } 
+      reduceMap[replaced] = count + 1;
+      minReduce = Math.min(minReduce, reduce(replaced, reductions, count + 1, reduceMap, limit));
     }
   }
   return minReduce;
@@ -134,4 +154,4 @@ inputReductions.sort(function(a, b) {
   }
   return ka.length > kb.length ? -1 : 1;
 });
-console.log(reduce(inputs[inputs.length-2], inputReductions, 0, 2));
+// console.log(reduce(inputs[inputs.length-2], inputReductions, 0, {}, 30));
