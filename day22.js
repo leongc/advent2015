@@ -14,6 +14,9 @@ var boss = {
       this.poisonTimer--;
     }
     return this.hp;
+  },
+  toString: function() {
+    return 'hp:'+this.hp+' pt:'+this.poisonTimer;
   }
 };
 var hero = {
@@ -26,6 +29,9 @@ var hero = {
     this.rechargeTimer = 0;
     this.shieldTimer = 0;
     return this;
+  },
+  toString: function() {
+    return 'hp:'+this.hp+' ar:'+this.armor+' m:'+this.mana+' rt:'+this.rechargeTimer+' st:'+this.shieldTimer;
   },
   getHit: function(attacker) {
     this.hp -= Math.max(1, attacker.damage - this.armor);
@@ -46,9 +52,6 @@ var hero = {
     }
   }
 };
-function idle(hero, boss) {
-  return 0;
-}
 function magicMissile(hero, boss) {
   if (hero.mana < 53) {
     return Infinity;
@@ -87,10 +90,10 @@ function recharge(hero, boss) {
   return 229;
 }
 
-var actions = [ idle, magicMissile, drain, shield, poison, recharge ];
+var actions = [ magicMissile, drain, shield, poison, recharge ];
 
 // return mana spent if a winner (under limit), otherwise Infinity
-function heroSpentMana(hero, boss, actionPlan, limit) {
+function heroSpentMana(hero, boss, actionPlan, limit, hard) {
   if (limit === undefined) {
     limit = Infinity;
   }
@@ -99,20 +102,25 @@ function heroSpentMana(hero, boss, actionPlan, limit) {
   boss.reset();
   while (true) {
     // player turn
+    if (hard && --hero.hp <= 0) {
+      return Infinity;
+    }
     if (boss.poisonEffect() <= 0) {
       return manaSpent;
     }
     hero.rechargeEffect();
     hero.shieldEffect();
     var a = actionPlan % actions.length;
-    // console.log(['idle','magicMissile','drain','shield','poison','recharge'][a]);
+    // console.log(['magicMissile','drain','shield','poison','recharge'][a]);
     actionPlan = Math.floor(actionPlan/actions.length);
     var spent = actions[a](hero, boss); // Infinity when impossible (no mana or effect already active)
+    manaSpent += spent;
     if (manaSpent >= limit) {
+      // console.log(hero);
       return Infinity;
     }
-    manaSpent += spent;
     hero.mana -= spent;
+    // console.log('Hero:'+hero.toString()+'\t\tBoss:'+boss.toString());
 
     // boss turn
     if (boss.poisonEffect() <= 0) {
@@ -121,20 +129,22 @@ function heroSpentMana(hero, boss, actionPlan, limit) {
     hero.rechargeEffect();
     hero.shieldEffect();
     if (hero.getHit(boss) <= 0) {
+      //console.log(hero);
       return Infinity;
     }
+    // console.log('Hero:'+hero.toString()+'\t\tBoss:'+boss.toString());
   }
 }
-// this action plan costs 1066: parseInt(1111431543, 6)
-function findMinManaSpent() {
-  var minManaSpent = 1067;
+//Action plan 448 (3423) succeeded and cost 953
+function findMinManaSpent(hard) {
+  var minManaSpent = Infinity;
   var bestPlan = Infinity;
-  for (var p = 1; p <= parseInt(1111431543, 6); p++) {
-    var spent = heroSpentMana(hero, boss, p, minManaSpent);
+  for (var p = 1; p <= 188926; p++) {
+    var spent = heroSpentMana(hero, boss, p, minManaSpent, hard);
     if (spent < minManaSpent) {
       minManaSpent = spent;
       bestPlan = p;
-      var planSteps = bestPlan.toString(6).split("").reverse().join("");
+      var planSteps = bestPlan.toString(5).split("").reverse().join("");
       console.log('Action plan ' + bestPlan + ' (' + planSteps + ') succeeded and cost ' + minManaSpent);
     }
   }
