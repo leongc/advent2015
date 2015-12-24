@@ -85,48 +85,64 @@ function steps(target, replacements, limit) {
 // console.log(steps('HOHOHO', inputReplacements, 10));
 
 var testReductions = [{'HH':'O'}, {'HO':'H'}, {'OH':'H'}, {'O':'e'}, {'H':'e'}];
-function reduce(input, reductions, count, reduceMap, limit) {
-  if (count === undefined) {
-    count = 0;
-  }
+function reduce(input, reductions, reduceMap, limit) {
   if (limit === undefined) {
     limit = 10;
   }
   if (reduceMap === undefined) {
     reduceMap = {};
   }
-  if (count >= limit) {
-    // console.log("gave up on " + input + " after " + count);
-    return Infinity;
-  }
   var minReduce = Infinity;
-  var replaced = input;
-  for (var i = 0; i < reductions.length; i++) {
-    var target = Object.keys(reductions[i])[0];
-    var index = input.indexOf(target);
-    if (index >= 0) {
-      var replacement = reductions[i][target];
-      replaced = input.split("");
-      replaced.splice(index, target.length, replacement);
-      if (replaced === "") {
-        return minReduce; // dead-end
+  var wordCountQueue = [[input, 0]];
+  var c = 0;
+  while (wordCountQueue.length > 0) {
+    var wordCount = wordCountQueue.pop();
+    var count = wordCount[1];
+    if (count >= minReduce) {
+      continue; 
+    }
+    var word = wordCount[0];
+    if (word === 'e') {
+      minReduce = count;
+      console.log('Path found! ' + minReduce);
+      continue;
+    }
+    var nextCount = count + 1;
+    if (nextCount > limit) {
+      continue;
+    }
+    var nextWords = nextReductions(word, reductions);
+    for (var i=0; i<nextWords.length; i++) {
+      var nextWord = nextWords[i];
+      var existingCount = reduceMap[nextWord];
+      if (nextCount >= existingCount) {
+        continue;
       }
-      replaced = replaced.join("");
-      if (replaced === 'e') {
-        return count + 1;
-      } 
-      if ((count + 1) > minReduce) {
-        return minReduce; // longer than known solution
-      }
-      var replacementCost = reduceMap[replaced];
-      if (replacementCost !== undefined) {
-        return minReduce; // already checked
-      } 
-      reduceMap[replaced] = count + 1;
-      minReduce = Math.min(minReduce, reduce(replaced, reductions, count + 1, reduceMap, limit));
+      reduceMap[nextWord] = nextCount;
+      wordCountQueue.push([nextWord, nextCount]);
+    }
+    if (c++ % 1000 === 0) {
+      console.log('queue length ' + wordCountQueue.length);
     }
   }
   return minReduce;
+}
+function nextReductions(word, reductions) {
+  var result = [];
+  for (var i = 0; i < reductions.length; i++) {
+    var target = Object.keys(reductions[i])[0];
+    var replacement = reductions[i][target];
+    var wordHead = word;
+    var index;
+    while ((index = wordHead.lastIndexOf(target)) >= 0) {
+      var replaced = word.split("");
+      replaced.splice(index, target.length, replacement);
+      replaced = replaced.join("");
+      result.push(replaced);
+      wordHead = word.substring(0, index);
+    }
+  }
+  return result;
 }
 function readReductionLine(s) {
   if (!s || s.indexOf(' => ') < 0) { return null; }
