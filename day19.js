@@ -77,20 +77,31 @@ function filterLength(arr, maxLen) {
 /**
  * @param candidate to compare to target
  * @param target desired match
- * @return lowest index of candidate element which differs from corresponding target element
+ * @return quantity of candidate elements from both ends which match their corresponding target element
  *         or candidate.length when all candidate elements match corresponding target elements
  */
 function matchLength(candidate, target) {
-  for (var i = 0; i < candidate.length; i++) {
+  var i = 0;
+/*
+  for (i = 0; i < candidate.length; ) {
     if (candidate[i] !== target[i]) {
-      return i;
+      break;
     }
+    i++;
   }
-  return candidate.length;
+*/
+  var j;
+  for (j = 0; j < candidate.length - i && j < target.length - i; ) {
+    if (candidate[candidate.length-1-j] !== target[target.length-1-j]) {
+      break;
+    }
+    j++;
+  }
+  return i + j;
 }
 /**
  * @return comparator function (suitable for use with Array.sort or priority_queue)
- *         with items assumed to be arrays of size 2, [string, step number]
+ *         with items assumed to be arrays of size 3, [string, step number, target match length]
  *         which compares first by length of target match (more is better), 
  *         then by absolute length (shorter is better), 
  *         then by natural order
@@ -98,20 +109,25 @@ function matchLength(candidate, target) {
  */
 function targetComparator(target) {
   return function(a, b) {
-    if (a[0] === b[0]) {
-      if (a[1] === b[1]) {
+    var aStr = a[0];
+    var bStr = b[0];
+    var aStep = a[1];
+    var bStep = b[1];
+    if (aStr === bStr) {
+      if (aStep === bStep) {
         return 0; 
       }
-      return a[1] - b[1]; // fewer steps are better
+      return aStep - bStep; // fewer steps are better
     }
-    var aMatch = matchLength(a[0], target);
-    var bMatch = matchLength(b[0], target);
+    var aMatch = a[2];
+    var bMatch = b[2];
     if (aMatch != bMatch) { return bMatch - aMatch; } // more match is better
-    if (a[0].length != b[0].length) { return a[0].length - b[0].length; } // shorter is better
-    return (a[0] < b[0]) ? -1 : 1; // lexicographic order
+    if (aStr.length != bStr.length) { return aStr.length - bStr.length; } // shorter is better
+    return (aStr < bStr) ? -1 : 1; // lexicographic order
   };
 }
 // use priority queue from https://github.com/agnat/js_priority_queue/blob/master/priority_queue.js
+var useMap = true;
 function steps(target, replacements, limit) {
   limit = limit || 10;
   var cmp = targetComparator(target);
@@ -125,15 +141,15 @@ function steps(target, replacements, limit) {
   var bestMatchLength = 0;
   var i = 0;
   while (next = pq.shift()) {
+    var input = next[0];
     if (++i % 100000 == 0) {
       console.log('Checking: ' + input + '.\tpq size ' + q.length);
     }
-    var input = next[0];
     var step = next[1] + 1;
     if (step > limit) {
       continue;
     }
-    var inputMatchLength = matchLength(input, target);
+    var inputMatchLength = next[2];
     if (inputMatchLength < bestMatchLength - 10) { // limit backtracking
       continue;
     }
@@ -147,30 +163,29 @@ function steps(target, replacements, limit) {
         // console.log(map);
         return step;
       }
-      if (step >= map[oj]) {
-        if (++seenit % 1000000 == 0) {
-          console.log('Map saved ' + seenit + ' lookups');
+      if (useMap) {
+        if (step >= map[oj]) {
+          if (++seenit % 100000 == 0) {
+            console.log('Map pruned ' + seenit + ' explorations, using ' + Object.keys(map).length + ' entries');
+          }
+          continue;
         }
-        continue;
+        map[oj] = step;
       }
-      map[oj] = step;
-      var curMatchLength = matchLength(oj, target);
-      if (curMatchLength > bestMatchLength) {
-        bestMatchLength = curMatchLength;
+      var ojMatchLength = matchLength(oj, target);
+      if (ojMatchLength > bestMatchLength) {
+        bestMatchLength = ojMatchLength;
         bestMatch = oj;
-        console.log('Best match: ' + oj + '\t' + step);
+        console.log(['Best match:', bestMatch, 'length:', bestMatchLength, 'step:', step].join(' '));
       }
-      pq.push([oj, step]);
+      pq.push([oj, step, ojMatchLength]);
     }
-    // TODO: peek at the bottom of the pq
-    // and conditionally remove based on the bestMatchLength
   }
+  if (useMap) { console.log('Map pruned ' + seenit + ' explorations, using ' + Object.keys(map).length + ' entries'); }
   return bestMatch;
 }
 // console.log(steps('HOHOHO', inputReplacements, 10));
-
-/*
-var testReductions = [{'HH':'O'}, {'HO':'H'}, {'OH':'H'}, {'O':'e'}, {'H':'e'}];
+var testReductions = [['HH','O'], ['HO','H'], ['OH','H'], ['O','e'], ['H','e']];
 function reduce(input, reductions, reduceMap, limit) {
   if (limit === undefined) {
     limit = 10;
@@ -228,16 +243,17 @@ function nextReductions(word, reductions) {
       wordHead = word.substring(0, index);
     }
   }
-  return result;
+  return shuffle(result);
 }
+function shuffle(o) {
+	for(var j, x, i = o.length; i; j = parseInt(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+	return o;
+};
+
 function readReductionLine(s) {
   if (!s || s.indexOf(' => ') < 0) { return null; }
-  var inOut = s.split(' => ');
-  var original = inOut[0];
-  var replacement = inOut[1];
-  var reduction = {};
-  reduction[replacement] = original;
-  return reduction;
+  var atomMolecule = s.split(' => ');
+  return atomMolecule.reverse();
 }
 var inputReductions = [];
 for (var i = 0; i < inputs.length; i++) {
@@ -247,17 +263,51 @@ for (var i = 0; i < inputs.length; i++) {
   }
 }
 inputReductions.sort(function(a, b) {
-  var ka = Object.keys(a)[0];
-  var kb = Object.keys(b)[0];
-  if (ka.length === kb.length) {
-    var va = a[ka];
-    var vb = b[kb];
-    return va.length > vb.length ? 1 : va.length < vb.length ? -1 : 0;
+  var aMolecule = a[0];
+  var bMolecule = b[0];
+  if (aMolecule.length === bMolecule.length) {
+    var aAtom = a[1];
+    var bAtom = b[1];
+    return aAtom.length > bAtom.length ? 1 : aAtom.length < bAtom.length ? -1 : 0;
   }
-  return ka.length > kb.length ? -1 : 1;
+  return aMolecule.length > bMolecule.length ? -1 : 1;
 });
-// console.log(reduce(inputs[inputs.length-2], inputReductions, 0, {}, 30));
-*/
+function rreduce(input, reductions, limit) {
+  limit = limit || 250;
+  var count = 0;
+  var s = input;
+  while (count < limit && s !== 'e') {
+    var maxRight = -Infinity;
+    var bestReduction = undefined;
+    var bestIndex = undefined;
+    for (var i = 0; i < reductions.length; i++) {
+      var reduction = reductions[i];
+      var molecule = reductions[i][0];
+      var moleculeIndex = s.lastIndexOf(molecule);
+      if (moleculeIndex >= 0) {
+        var moleculeRight = moleculeIndex + molecule.length;
+        if (moleculeRight > maxRight) {
+          maxRight = moleculeRight;
+          bestReduction = reduction;
+          bestIndex = moleculeIndex;
+          // console.log(s + ' best is ' + bestReduction);
+        }
+      }
+    }
+    if (bestReduction === undefined) {
+      console.log('No reductions');
+      break;
+    }
+    var arr = s.split("");
+    arr.splice(bestIndex, bestReduction[0].length, bestReduction[1]);
+    s = arr.join("");
+    count++;
+  }
+  // console.log(count, s);
+  return count;
+}
+console.log(rreduce(medicine, inputReductions));
+
 function isUpper(c) {
   return c === c.toUpperCase();
 }
